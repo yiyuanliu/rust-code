@@ -1,0 +1,3 @@
+# RUST code
+
+Just some simple & naive RUST code...
