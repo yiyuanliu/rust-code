@@ -42,7 +42,7 @@ fn jump_n(mut key: u64, nbucket: u32, nstripe: u32, distinct: bool) -> Vec<u32> 
 fn parse_arg() -> (u32, u32, u32) {
     let hint = "arg: <nbucket> <nkey> <nstripe>";
     let arg: Vec<u32> = std::env::args().skip(1).map(|arg| arg.parse().expect(&arg)).collect();
-    assert!(arg.len() == 3, hint);
+    assert!(arg.len() == 3, "{}", hint);
     (arg[0], arg[1], arg[2])
 }
 
