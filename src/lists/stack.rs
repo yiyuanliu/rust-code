@@ -1,4 +1,4 @@
-use std::rc::Rc as Rc;
+use std::rc::Rc;
 
 struct List<T> {
     head: Option<Rc<Node<T>>>,
@@ -23,20 +23,23 @@ impl<T> Drop for List<T> {
 }
 
 impl<T> List<T> {
-
     fn new() -> List<T> {
         List { head: None }
     }
 
     fn pop(&self) -> List<T> {
-        List { head: self.head.as_ref().and_then(|node| node.next.clone()) }
+        List {
+            head: self.head.as_ref().and_then(|node| node.next.clone()),
+        }
     }
 
     fn push(&self, val: T) -> List<T> {
-        List { head: Some(Rc::new(Node {
-            val: val,
-            next: self.head.clone(),
-        }))}
+        List {
+            head: Some(Rc::new(Node {
+                val,
+                next: self.head.clone(),
+            })),
+        }
     }
 
     fn peek(&self) -> Option<&T> {
@@ -51,7 +54,7 @@ mod test {
     fn test() {
         let list = List::new();
         assert_eq!(list.peek(), None);
-        
+
         let list = list.push(10);
         assert_eq!(list.peek(), Some(&10));
 

@@ -31,7 +31,7 @@ impl<T> Queue<T> {
 
     pub fn enqueue(&mut self, elem: T) {
         let mut tail = Box::new(Node {
-            elem: elem,
+            elem,
             next: None,
             prev: self.tail,
         });
@@ -71,11 +71,15 @@ impl<T> Queue<T> {
     }
 
     pub fn iter(&self) -> Iter<'_, T> {
-        Iter { next: self.head.as_deref() }
+        Iter {
+            next: self.head.as_deref(),
+        }
     }
 
     pub fn iter_mut(&mut self) -> IterMut<'_, T> {
-        IterMut { next: self.head.as_deref_mut() }
+        IterMut {
+            next: self.head.as_deref_mut(),
+        }
     }
 }
 
@@ -95,7 +99,7 @@ impl<T> Iterator for IntoIter<T> {
     }
 }
 
-impl <'a, T> Iterator for Iter<'a, T> {
+impl<'a, T> Iterator for Iter<'a, T> {
     type Item = &'a T;
     fn next(&mut self) -> Option<Self::Item> {
         self.next.take().map(|next| {
@@ -105,7 +109,7 @@ impl <'a, T> Iterator for Iter<'a, T> {
     }
 }
 
-impl <'a, T> Iterator for IterMut<'a, T> {
+impl<'a, T> Iterator for IterMut<'a, T> {
     type Item = &'a mut T;
     fn next(&mut self) -> Option<Self::Item> {
         self.next.take().map(|next| {

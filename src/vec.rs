@@ -1,8 +1,8 @@
+use std::alloc::{alloc, dealloc, handle_alloc_error, realloc, Layout};
 use std::marker::PhantomData;
 use std::mem;
-use std::ptr;
-use std::alloc::{Layout, alloc, realloc, dealloc, handle_alloc_error};
 use std::ops::{Deref, DerefMut};
+use std::ptr;
 
 struct Vec<T> {
     data: RawVec<T>,
@@ -18,9 +18,12 @@ impl<T> Unique<T> {
     fn dangling() -> Self {
         Self::new_unchecked(mem::align_of::<T>() as *mut _)
     }
-    
+
     fn new_unchecked(ptr: *mut T) -> Self {
-        Self { ptr: ptr as _, _marker: PhantomData }
+        Self {
+            ptr: ptr as _,
+            _marker: PhantomData,
+        }
     }
 
     fn as_ptr(&self) -> *mut T {
@@ -40,7 +43,10 @@ impl<T> RawVec<T> {
 
     fn with_capacity(cap: usize) -> Self {
         if cap == 0 {
-            Self { ptr: Unique::dangling(), cap: 0 }
+            Self {
+                ptr: Unique::dangling(),
+                cap: 0,
+            }
         } else {
             let layout = Layout::array::<T>(cap).unwrap();
             let ptr = unsafe { alloc(layout) };
@@ -49,7 +55,7 @@ impl<T> RawVec<T> {
             }
             Self {
                 ptr: Unique::new_unchecked(ptr as _),
-                cap: cap,
+                cap,
             }
         }
     }
@@ -94,8 +100,11 @@ impl<T> Drop for RawVec<T> {
     fn drop(&mut self) {
         // todo: add may dangle
         if self.cap > 0 {
-            unsafe { 
-                dealloc(self.ptr.as_ptr() as _, Layout::array::<T>(self.cap).unwrap());
+            unsafe {
+                dealloc(
+                    self.ptr.as_ptr() as _,
+                    Layout::array::<T>(self.cap).unwrap(),
+                );
             }
         }
     }
@@ -139,7 +148,7 @@ impl<T> Vec<T> {
         }
 
         unsafe {
-            ptr::write(self.as_ptr().offset(self.len as isize), val);
+            ptr::write(self.as_ptr().add(self.len), val);
         }
         self.len += 1;
     }
@@ -154,11 +163,11 @@ impl<T> Vec<T> {
         unsafe {
             println!("copy {}", self.len() - idx);
             ptr::copy(
-                self.as_ptr().offset(idx as isize), 
-                self.as_ptr().offset(idx as isize + 1 as isize), 
-                self.len - idx
+                self.as_ptr().add(idx),
+                self.as_ptr().add(idx + 1),
+                self.len - idx,
             );
-            ptr::write(self.as_ptr().offset(idx as isize), val);
+            ptr::write(self.as_ptr().add(idx), val);
         }
         self.len += 1;
     }
@@ -168,19 +177,17 @@ impl<T> Vec<T> {
             None
         } else {
             self.len -= 1;
-            unsafe {
-                Some(ptr::read(self.as_ptr().offset(self.len as isize))) 
-            }
+            unsafe { Some(ptr::read(self.as_ptr().add(self.len))) }
         }
     }
 
     fn remove(&mut self, idx: usize) {
         unsafe {
-            ptr::drop_in_place(self.as_ptr().offset(idx as isize));
+            ptr::drop_in_place(self.as_ptr().add(idx));
             ptr::copy(
-                self.as_ptr().offset(idx as isize + 1 as isize),
-                self.as_ptr().offset(idx as isize),
-                self.len - idx - 1
+                self.as_ptr().add(idx + 1),
+                self.as_ptr().add(idx),
+                self.len - idx - 1,
             );
         }
         self.len -= 1;
@@ -190,9 +197,7 @@ impl<T> Vec<T> {
         if self.len <= idx {
             None
         } else {
-            unsafe {
-                Some(&*self.as_ptr().offset(self.len as isize))
-            }
+            unsafe { Some(&*self.as_ptr().add(self.len)) }
         }
     }
 
@@ -201,9 +206,7 @@ impl<T> Vec<T> {
         if self.len <= idx {
             None
         } else {
-            unsafe {
-                Some(&mut *self.as_ptr().offset(self.len as isize))
-            }
+            unsafe { Some(&mut *self.as_ptr().add(self.len)) }
         }
     }
 }
@@ -212,7 +215,7 @@ impl<T> Drop for Vec<T> {
     fn drop(&mut self) {
         unsafe {
             for i in 0..self.len {
-                ptr::drop_in_place(self.as_ptr().offset(i as isize));
+                ptr::drop_in_place(self.as_ptr().add(i));
             }
         }
     }
@@ -220,7 +223,7 @@ impl<T> Drop for Vec<T> {
 
 impl<T> Deref for Vec<T> {
     type Target = [T];
-    fn deref(&self) -> &[T] { 
+    fn deref(&self) -> &[T] {
         unsafe { std::slice::from_raw_parts(self.as_ptr(), self.len) }
     }
 }

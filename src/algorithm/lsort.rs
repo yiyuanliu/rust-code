@@ -6,9 +6,7 @@ struct ListNode {
 }
 
 fn qsort(head: Option<Box<ListNode>>) -> Option<Box<ListNode>> {
-    if head.is_none() {
-        return None;
-    }
+    head.as_ref()?;
 
     let (mut l1, mut l2) = (None, None);
     let (mut t1, mut t2) = (&mut l1, &mut l2);
@@ -49,7 +47,10 @@ fn gen(len: usize) -> Option<Box<ListNode>> {
     let mut tail = &mut head;
     for _ in 0..len {
         let val = random();
-        *tail = Some(Box::new(ListNode { elem: val, next: None } ));
+        *tail = Some(Box::new(ListNode {
+            elem: val,
+            next: None,
+        }));
         tail = &mut tail.as_mut().unwrap().next;
     }
 
@@ -67,7 +68,7 @@ fn is_sorted(head: &Option<Box<ListNode>>) -> bool {
         curr = node.next.as_ref();
     }
 
-    return true;
+    true
 }
 
 #[cfg(test)]

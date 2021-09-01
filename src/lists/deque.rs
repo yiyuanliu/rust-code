@@ -1,5 +1,5 @@
-use std::rc::Rc;
 use std::cell::{Ref, RefCell};
+use std::rc::Rc;
 
 struct List<T> {
     head: Link<T>,
@@ -16,19 +16,22 @@ struct Node<T> {
 
 impl<T> List<T> {
     fn new() -> List<T> {
-        List { head: None, tail: None }
+        List {
+            head: None,
+            tail: None,
+        }
     }
 
     fn push_front(&mut self, elem: T) {
         let node = Rc::new(RefCell::new(Node {
-            elem: elem,
+            elem,
             prev: None,
             next: None,
         }));
         match self.head.take() {
             Some(head) => {
                 head.borrow_mut().prev = Some(node.clone());
-                node.borrow_mut().next = Some(head.clone());
+                node.borrow_mut().next = Some(head);
                 self.head = Some(node);
             }
             None => {
@@ -40,14 +43,14 @@ impl<T> List<T> {
 
     fn push_back(&mut self, elem: T) {
         let node = Rc::new(RefCell::new(Node {
-            elem: elem,
+            elem,
             prev: None,
             next: None,
         }));
         match self.tail.take() {
             Some(tail) => {
                 tail.borrow_mut().next = Some(node.clone());
-                node.borrow_mut().prev = Some(tail.clone());
+                node.borrow_mut().prev = Some(tail);
                 self.tail = Some(node);
             }
             None => {
@@ -92,21 +95,21 @@ impl<T> List<T> {
     }
 
     fn peek_front(&self) -> Option<Ref<T>> {
-        self.head.as_ref().map(|node| {
-            Ref::map(node.borrow(), |node| &node.elem)
-        })
+        self.head
+            .as_ref()
+            .map(|node| Ref::map(node.borrow(), |node| &node.elem))
     }
 
     fn peek_back(&self) -> Option<Ref<T>> {
-        self.tail.as_ref().map(|node| {
-            Ref::map(node.borrow(), |node| &node.elem)
-        })
+        self.tail
+            .as_ref()
+            .map(|node| Ref::map(node.borrow(), |node| &node.elem))
     }
 }
 
 impl<T> Drop for List<T> {
     fn drop(&mut self) {
-        while self.pop_front().is_some() { }
+        while self.pop_front().is_some() {}
     }
 }
 
@@ -124,7 +127,8 @@ mod test {
         assert_eq!(list.pop_back(), Some(5));
         assert_eq!(list.pop_back(), Some(10));
 
-        list.push_front(1); list.push_front(2);
+        list.push_front(1);
+        list.push_front(2);
         assert_eq!(*list.peek_front().unwrap(), 2);
         assert_eq!(*list.peek_back().unwrap(), 1);
     }
