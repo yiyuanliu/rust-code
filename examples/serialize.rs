@@ -10,7 +10,7 @@ mod serde {
         parents: Vec<&'a str>,
     }
 
-    pub fn benchmark(name: &str, parents: &[&str]) {
+    pub fn flexbuffer(name: &str, parents: &[&str]) {
         let student = Student {
             name,
             age: 26,
@@ -38,6 +38,38 @@ mod serde {
         let dur_deserialize = begin.elapsed().unwrap();
         println!(
             "serde + flexbuffer: data len: {}bytes, serialize: {}ns, deserialize: {}ns",
+            data_len,
+            dur_serialize.as_nanos() / (super::ITERATIONS as u128),
+            dur_deserialize.as_nanos() / (super::ITERATIONS as u128),
+        );
+    }
+
+    pub fn bincode(name: &str, parents: &[&str]) {
+        let student = Student {
+            name,
+            age: 26,
+            id: 9527,
+            parents: parents.to_owned(),
+        };
+    
+        let begin = std::time::SystemTime::now();
+        for _ in 0..super::ITERATIONS {
+            let data = bincode::serialize(&student).unwrap();
+            assert!(data.len() != 0);
+        }
+        let dur_serialize = begin.elapsed().unwrap();
+    
+        let data = bincode::serialize(&student).unwrap();
+        let data_len = data.len();
+    
+        let begin = std::time::SystemTime::now();
+        for _ in 0..super::ITERATIONS {
+            let student1: Student = bincode::deserialize(&data[..]).unwrap();
+            assert_eq!(student.id, student1.id);
+        }
+        let dur_deserialize = begin.elapsed().unwrap();
+        println!(
+            "serde + bincode: data len: {}bytes, serialize: {}ns, deserialize: {}ns",
             data_len,
             dur_serialize.as_nanos() / (super::ITERATIONS as u128),
             dur_deserialize.as_nanos() / (super::ITERATIONS as u128),
@@ -102,13 +134,10 @@ mod rkyv {
     }
 }
 
-mod bytevec {
-
-}
-
 fn main() {
     let name = "Li Xiaoming";
     let parents = ["Li Daming", "Wang Xiaohong"];
-    serde::benchmark(name, &parents);
+    serde::flexbuffer(name, &parents);
+    serde::bincode(name, &parents);
     rkyv::benchmark(name, &parents);
 }
