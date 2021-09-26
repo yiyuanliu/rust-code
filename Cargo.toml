@@ -11,6 +11,10 @@ rand = "0.7.3"
 futures = "0.3"
 etcd-client = "0.7"
 tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+flexbuffers = "0.2"
+zerocopy = "0.6"
+rkyv = "0.7"
 
 [[bin]]
 name = "jump_hash"
