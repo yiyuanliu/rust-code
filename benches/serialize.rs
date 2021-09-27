@@ -74,12 +74,7 @@ mod serde {
 }
 
 mod rkyv {
-    use rkyv::{
-        archived_root,
-        ser::{serializers::AllocSerializer, Serializer},
-        with::Boxed,
-        Archive, Serialize,
-    };
+    use rkyv::{AlignedVec, Archive, Serialize, archived_root, ser::{self, Serializer, serializers::{AlignedSerializer, AllocSerializer, CoreSerializer, FallbackScratch, SharedSerializeMap}}, with::Boxed};
 
     #[derive(Archive, Serialize)]
     struct Parent<'a> {
@@ -114,24 +109,42 @@ mod rkyv {
     }
 
     #[bench]
-    fn serialize(bench: &mut test::Bencher) {
+    fn core_serialize(bench: &mut test::Bencher) {
         bench.iter(|| {
             let student = gen_student();
-            let mut serializer = AllocSerializer::<64>::default();
+            let mut serializer = CoreSerializer::<256, 256>::default();
             serializer.serialize_value(&student).unwrap();
+            let _ = serializer.into_serializer().into_inner();
+        })
+    }
+
+    #[bench]
+    fn alloc_serialize(bench: &mut test::Bencher) {
+        bench.iter(|| {
+            let student = gen_student();
+            let mut serializer = AllocSerializer::<128>::new(
+                // reseve space for aligned serializer to avoid malloc too many times
+                AlignedSerializer::new(AlignedVec::with_capacity(128)), 
+                FallbackScratch::default(), 
+                SharedSerializeMap::default(),
+            );
+            serializer.serialize_value(&student).unwrap();
+            let _ = serializer.into_serializer().into_inner();
         })
     }
 
     #[bench]
     fn deserialize(bench: &mut test::Bencher) {
         let student = gen_student();
-        let mut serializer = AllocSerializer::<64>::default();
+        let mut serializer = CoreSerializer::<256, 256>::default();
         assert_eq!(serializer.pos(), 0);
         serializer.serialize_value(&student).unwrap();
-        let data = serializer.into_serializer().into_inner();
+        let data_len = serializer.pos();
+        let bytes = &serializer.into_serializer().into_inner();
+        let data = &bytes[0..data_len];
         println!("serde::bincode: {}bytes", data.len());
         bench.iter(|| {
-            let student1 = unsafe { archived_root::<Student>(&data[..]) };
+            let student1 = unsafe { archived_root::<Student>(data) };
             assert_eq!(student.id, student1.id);
         })
     }
