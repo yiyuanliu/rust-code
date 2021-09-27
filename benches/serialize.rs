@@ -74,7 +74,18 @@ mod serde {
 }
 
 mod rkyv {
-    use rkyv::{AlignedVec, Archive, Serialize, archived_root, ser::{self, Serializer, serializers::{AlignedSerializer, AllocSerializer, CoreSerializer, FallbackScratch, SharedSerializeMap}}, with::Boxed};
+    use rkyv::{
+        archived_root,
+        ser::{
+            serializers::{
+                AlignedSerializer, AllocSerializer, CoreSerializer, FallbackScratch,
+                SharedSerializeMap,
+            },
+            Serializer,
+        },
+        with::Boxed,
+        AlignedVec, Archive, Serialize,
+    };
 
     #[derive(Archive, Serialize)]
     struct Parent<'a> {
@@ -124,8 +135,8 @@ mod rkyv {
             let student = gen_student();
             let mut serializer = AllocSerializer::<128>::new(
                 // reseve space for aligned serializer to avoid malloc too many times
-                AlignedSerializer::new(AlignedVec::with_capacity(128)), 
-                FallbackScratch::default(), 
+                AlignedSerializer::new(AlignedVec::with_capacity(128)),
+                FallbackScratch::default(),
                 SharedSerializeMap::default(),
             );
             serializer.serialize_value(&student).unwrap();
