@@ -5,7 +5,7 @@ enum Thread {
 }
 
 #[derive(Clone, Copy)]
-enum Future {
+enum Feature {
     None,
     Io,
     Timer,
@@ -32,14 +32,14 @@ async fn benchmark() {
     let dur3 = begin.elapsed().unwrap();
 
     println!(
-        " \tspawn {}ns, \tspawn + join {}ns, \tyeild {}ns",
+        " \tspawn {:3}ns, \tspawn + join {:5}ns, \tyeild {:3}ns",
         dur1.as_nanos() / 100000,
         dur2.as_nanos() / 100000,
         dur3.as_nanos() / 100000
     );
 }
 
-fn runtime(t: Thread, f: Future) -> tokio::runtime::Runtime {
+fn runtime(t: Thread, f: Feature) -> tokio::runtime::Runtime {
     let mut builder = match t {
         Thread::Current => {
             print!("current_thread::");
@@ -51,20 +51,20 @@ fn runtime(t: Thread, f: Future) -> tokio::runtime::Runtime {
         }
     };
     match f {
-        Future::None => {
-            print!("none:");
+        Feature::None => {
+            print!("none\t:");
             builder.build().unwrap()
         }
-        Future::Io => {
-            print!("io:");
+        Feature::Io => {
+            print!("io\t:");
             builder.enable_io().build().unwrap()
         }
-        Future::Timer => {
-            print!("time:");
+        Feature::Timer => {
+            print!("time\t:");
             builder.enable_time().build().unwrap()
         }
-        Future::All => {
-            print!("all:");
+        Feature::All => {
+            print!("all\t:");
             builder.enable_all().build().unwrap()
         }
     }
@@ -72,7 +72,7 @@ fn runtime(t: Thread, f: Future) -> tokio::runtime::Runtime {
 
 fn main() {
     let threads = [Thread::Current, Thread::Multiple];
-    let features = [Future::None, Future::Io, Future::Timer, Future::All];
+    let features = [Feature::None, Feature::Io, Feature::Timer, Feature::All];
     for thread in threads {
         for feature in features {
             runtime(thread, feature).block_on(benchmark());
